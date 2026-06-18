@@ -1,0 +1,17 @@
+# Binaries and executables
+sts-surreal
+db_daemon/surreal
+
+# Local database storage
+db_daemon/data/
+
+# Transient agent context outputs
+.agents/recommended_tools.json
+
+# Logs
+*.log
+db_daemon/*.log
+
+# Environment/system configuration
+config.json
+.DS_Store

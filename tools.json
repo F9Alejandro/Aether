@@ -1,0 +1,1089 @@
+[
+  {
+    "id": "send_slack_message",
+    "description": "Send instant notifications, status updates, or alerts to a designated Slack channel using webhooks.",
+    "parameters": [
+      {
+        "name": "channel_id",
+        "type": "string",
+        "description": "Target Slack channel name or identifier (e.g., #engineering, C12345)",
+        "required": true
+      },
+      {
+        "name": "message",
+        "type": "string",
+        "description": "The actual text content to publish to the channel.",
+        "required": true
+      },
+      {
+        "name": "username",
+        "type": "string",
+        "description": "Custom display name for the bot sender.",
+        "required": false
+      },
+      {
+        "name": "webhook_url",
+        "type": "string",
+        "description": "Optional direct webhook endpoint to bypass default routing.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "send_slack_message(channel_id='#engineering', message='Build pipeline succeeded!')",
+        "description": "Notify developers about successful build"
+      },
+      {
+        "usage": "send_slack_message(channel_id='#ops-alerts', message='CRITICAL: CPU threshold exceeded 90%')",
+        "description": "Send a critical system warning to ops"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Confirmation detailing request status and timestamp of delivery."
+    },
+    "usage_count": 45
+  },
+  {
+    "id": "backup_database",
+    "description": "Create a compressed backup archive of the specified PostgreSQL or MySQL database and upload it to secure storage.",
+    "parameters": [
+      {
+        "name": "db_name",
+        "type": "string",
+        "description": "Name of the target database schema.",
+        "required": true
+      },
+      {
+        "name": "storage_bucket",
+        "type": "string",
+        "description": "S3 or Cloud Storage bucket name to save the backup zip.",
+        "required": true
+      },
+      {
+        "name": "compression_level",
+        "type": "int",
+        "description": "Level of compression (1-9), defaults to 6.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "backup_database(db_name='users_prod', storage_bucket='company-db-backups')",
+        "description": "Create user database backup"
+      },
+      {
+        "usage": "backup_database(db_name='inventory_db', storage_bucket='cold-backups', compression_level=9)",
+        "description": "Create highly compressed archive of inventory database"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Object specifying backup filename, file size, bucket location, and SHA-256 hash."
+    },
+    "usage_count": 12
+  },
+  {
+    "id": "query_database",
+    "description": "Execute a read-only SQL SELECT query against the active database cluster to fetch data records.",
+    "parameters": [
+      {
+        "name": "sql_query",
+        "type": "string",
+        "description": "The SQL query string to run. Must be read-only (SELECT).",
+        "required": true
+      },
+      {
+        "name": "db_cluster",
+        "type": "string",
+        "description": "Target cluster name (primary, replica-us, replica-eu).",
+        "required": false
+      },
+      {
+        "name": "row_limit",
+        "type": "int",
+        "description": "Max number of rows to return, defaults to 100.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "query_database(sql_query='SELECT * FROM users WHERE status = \"active\" LIMIT 10')",
+        "description": "Query active user records"
+      },
+      {
+        "usage": "query_database(sql_query='SELECT COUNT(*) FROM orders', db_cluster='replica-eu')",
+        "description": "Count total orders in EU replica"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "Array of JSON objects matching rows returned by the database server."
+    },
+    "usage_count": 89
+  },
+  {
+    "id": "deploy_docker_container",
+    "description": "Deploy a specified Docker image tag to the cloud environment (ECS, Kubernetes, or App Runner).",
+    "parameters": [
+      {
+        "name": "image_uri",
+        "type": "string",
+        "description": "Docker image registry path (e.g. gcr.io/my-project/api:v2.1.0)",
+        "required": true
+      },
+      {
+        "name": "environment",
+        "type": "string",
+        "description": "Target deployment tier (staging, production, sandbox)",
+        "required": true
+      },
+      {
+        "name": "port",
+        "type": "int",
+        "description": "Application listening port inside container.",
+        "required": true
+      },
+      {
+        "name": "replicas",
+        "type": "int",
+        "description": "Target number of container instances, defaults to 2.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "deploy_docker_container(image_uri='docker.io/library/nginx:latest', environment='staging', port=80)",
+        "description": "Deploy nginx to staging"
+      },
+      {
+        "usage": "deploy_docker_container(image_uri='gcr.io/proj/api:v1', environment='production', port=8080, replicas=5)",
+        "description": "Deploy custom API to production with 5 instances"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Deployment status, endpoint URLs, and deployment revision ID."
+    },
+    "usage_count": 33
+  },
+  {
+    "id": "send_email_report",
+    "description": "Send HTML/Text email reports, alerts, or newsletters through secure SMTP or SendGrid provider.",
+    "parameters": [
+      {
+        "name": "recipient",
+        "type": "string",
+        "description": "Target email address of the receiver.",
+        "required": true
+      },
+      {
+        "name": "subject",
+        "type": "string",
+        "description": "Subject line of the email.",
+        "required": true
+      },
+      {
+        "name": "body_content",
+        "type": "string",
+        "description": "Text or HTML body content of the message.",
+        "required": true
+      },
+      {
+        "name": "attachments",
+        "type": "array",
+        "description": "List of file paths or S3 URIs to attach.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "send_email_report(recipient='ceo@company.com', subject='Q2 Performance Report', body_content='Please find Q2 metrics attached')",
+        "description": "Email performance report to management"
+      },
+      {
+        "usage": "send_email_report(recipient='devs@company.com', subject='Alert: System Outage', body_content='API is down in prod')",
+        "description": "Send high-priority email alert"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Delivery message ID and transmission status code."
+    },
+    "usage_count": 20
+  },
+  {
+    "id": "fetch_application_logs",
+    "description": "Query and retrieve recent application logs from centralized log management systems (CloudWatch, ELK, Datadog) based on filters.",
+    "parameters": [
+      {
+        "name": "service_name",
+        "type": "string",
+        "description": "Name of the microservice (e.g. auth-service, gateway).",
+        "required": true
+      },
+      {
+        "name": "log_level",
+        "type": "string",
+        "description": "Log level filter (ERROR, WARN, INFO, DEBUG).",
+        "required": false
+      },
+      {
+        "name": "duration_minutes",
+        "type": "int",
+        "description": "Time window in minutes to look back, defaults to 15.",
+        "required": false
+      },
+      {
+        "name": "search_pattern",
+        "type": "string",
+        "description": "Keyword or regex to search inside logs.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "fetch_application_logs(service_name='payment-api', log_level='ERROR', duration_minutes=30)",
+        "description": "Get recent errors in payment service"
+      },
+      {
+        "usage": "fetch_application_logs(service_name='gateway', search_pattern='TimeoutException')",
+        "description": "Search gateway logs for timeouts"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "Array of log entries with timestamp, log level, and raw log message."
+    },
+    "usage_count": 74
+  },
+  {
+    "id": "scale_kubernetes_deployment",
+    "description": "Scale the replication count for a specific Kubernetes Deployment resource.",
+    "parameters": [
+      {
+        "name": "deployment_name",
+        "type": "string",
+        "description": "Name of the target deployment resource.",
+        "required": true
+      },
+      {
+        "name": "namespace",
+        "type": "string",
+        "description": "Kubernetes namespace (default, production, staging).",
+        "required": false
+      },
+      {
+        "name": "replicas",
+        "type": "int",
+        "description": "The desired number of running replicas.",
+        "required": true
+      }
+    ],
+    "examples": [
+      {
+        "usage": "scale_kubernetes_deployment(deployment_name='auth-server', replicas=4)",
+        "description": "Scale auth deployment replicas to 4"
+      },
+      {
+        "usage": "scale_kubernetes_deployment(deployment_name='web-front', namespace='production', replicas=10)",
+        "description": "Scale production front-end to 10 instances"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Result summary with target replicas, active replicas, and namespace context."
+    },
+    "usage_count": 15
+  },
+  {
+    "id": "list_aws_s3_buckets",
+    "description": "List files, directories, and metadata stored inside an Amazon Web Services S3 bucket.",
+    "parameters": [
+      {
+        "name": "bucket_name",
+        "type": "string",
+        "description": "The name of the target AWS S3 bucket.",
+        "required": true
+      },
+      {
+        "name": "prefix",
+        "type": "string",
+        "description": "Directory path prefix to filter objects.",
+        "required": false
+      },
+      {
+        "name": "max_keys",
+        "type": "int",
+        "description": "Max keys to list in a single batch, defaults to 1000.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "list_aws_s3_buckets(bucket_name='company-reports', prefix='2026/')",
+        "description": "List reports from the 2026 directory"
+      },
+      {
+        "usage": "list_aws_s3_buckets(bucket_name='media-assets', max_keys=10)",
+        "description": "List first 10 items in media bucket"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "List of files with keys, size in bytes, and last modified dates."
+    },
+    "usage_count": 28
+  },
+  {
+    "id": "get_server_metrics",
+    "description": "Fetch real-time host hardware metrics (CPU load, memory load, disk IO) from telemetry targets (Prometheus).",
+    "parameters": [
+      {
+        "name": "node_id",
+        "type": "string",
+        "description": "Target host machine name or IP address.",
+        "required": true
+      },
+      {
+        "name": "metric_type",
+        "type": "string",
+        "description": "Metric class to pull (cpu, memory, disk, network), defaults to cpu.",
+        "required": false
+      },
+      {
+        "name": "interval",
+        "type": "string",
+        "description": "Time interval step (e.g. 5m, 1h).",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "get_server_metrics(node_id='prod-db-01', metric_type='memory')",
+        "description": "Retrieve memory usage from prod-db-01"
+      },
+      {
+        "usage": "get_server_metrics(node_id='k8s-worker-12', interval='1h')",
+        "description": "Retrieve hourly CPU usage from worker"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "Time series data containing timestamps and float values."
+    },
+    "usage_count": 61
+  },
+  {
+    "id": "create_git_pr",
+    "description": "Create a Git Pull Request or Merge Request automatically to merge code changes from development branch to release branch.",
+    "parameters": [
+      {
+        "name": "repository",
+        "type": "string",
+        "description": "Repository namespace/name (e.g., github/workspace/api-service).",
+        "required": true
+      },
+      {
+        "name": "source_branch",
+        "type": "string",
+        "description": "The feature branch containing commits.",
+        "required": true
+      },
+      {
+        "name": "target_branch",
+        "type": "string",
+        "description": "The branch to merge into (usually main or develop).",
+        "required": true
+      },
+      {
+        "name": "pr_title",
+        "type": "string",
+        "description": "Title of the Pull Request.",
+        "required": true
+      },
+      {
+        "name": "pr_description",
+        "type": "string",
+        "description": "Body description/release notes for reviewer.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "create_git_pr(repository='org/api-service', source_branch='feature-auth', target_branch='develop', pr_title='Add oauth support')",
+        "description": "Open pull request for OAuth branch"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Pull request details including PR URL, state, ID, and merge status."
+    },
+    "usage_count": 19
+  },
+  {
+    "id": "send_discord_message",
+    "description": "Send real-time alerts, status updates, or notifications to a designated Discord channel using official Webhook APIs.",
+    "parameters": [
+      {
+        "name": "webhook_url",
+        "type": "string",
+        "description": "The unique Discord webhook endpoint URL.",
+        "required": true
+      },
+      {
+        "name": "content",
+        "type": "string",
+        "description": "The message text content (supports Discord markdown formatting).",
+        "required": true
+      },
+      {
+        "name": "username",
+        "type": "string",
+        "description": "Overrides the webhook bot's default username.",
+        "required": false
+      },
+      {
+        "name": "avatar_url",
+        "type": "string",
+        "description": "Overrides the webhook bot's default profile image link.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "send_discord_message(webhook_url='https://discord.com/api/webhooks/...', content='**Alert**: Production DB backup failed!')",
+        "description": "Send failed backup alert to discord"
+      },
+      {
+        "usage": "send_discord_message(webhook_url='https://discord.com/api/webhooks/...', content='New release deployed to staging.', username='Staging Bot')",
+        "description": "Send release success confirmation"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Confirmation details including HTTP response code and transmission status."
+    },
+    "usage_count": 22
+  },
+  {
+    "id": "execute_hex_code",
+    "description": "Compile and execute a binary program directly from raw hex instruction bytes or machine language to run operations with maximum compression and speed, cutting down text representation size.",
+    "parameters": [
+      {
+        "name": "hex_instructions",
+        "type": "string",
+        "description": "Raw hexadecimal encoded string of compile target/machine instructions.",
+        "required": true
+      },
+      {
+        "name": "architecture",
+        "type": "string",
+        "description": "Target runtime architecture (x86_64, arm64, wasm).",
+        "required": true
+      },
+      {
+        "name": "memory_limit_mb",
+        "type": "int",
+        "description": "Max memory allocation limit in MB, defaults to 64.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "execute_hex_code(hex_instructions='48c7c00100000048c7c701000000488d350a00000048c7c20c0000000f05b83c00000031ff0f0548656c6c6f20576f726c640a', architecture='x86_64')",
+        "description": "Execute a raw x86_64 'Hello World' hex instruction assembly"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Execution report specifying exit code, stdout string, stderr string, execution time, and CPU cycle consumption."
+    },
+    "usage_count": 5
+  },
+  {
+    "id": "spawn_background_worker",
+    "description": "Spawn and run an asynchronous background process or system script autonomously. The process runs decoupled from the active agent thread, allowing continuous execution, telemetry collection, or task queue monitoring without blocking the session or waiting for interactive user response.",
+    "parameters": [
+      {
+        "name": "command",
+        "type": "string",
+        "description": "The binary, script, or command to execute in the background.",
+        "required": true
+      },
+      {
+        "name": "working_dir",
+        "type": "string",
+        "description": "Working directory where the process is spawned.",
+        "required": false
+      },
+      {
+        "name": "log_file",
+        "type": "string",
+        "description": "File path to redirect standard output and stderr streams to capture logs.",
+        "required": false
+      },
+      {
+        "name": "auto_restart",
+        "type": "bool",
+        "description": "Restart the process automatically if it crashes or terminates with a non-zero exit code, defaults to false.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "spawn_background_worker(command='go run worker.go', log_file='logs/worker.log', auto_restart=true)",
+        "description": "Spawn worker.go daemon with logging and auto-restart policy"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Details containing the process ID (PID), log target, status (running), and timestamp."
+    },
+    "usage_count": 15
+  },
+  {
+    "id": "grep_code",
+    "description": "Search for specific string patterns or regular expressions inside project source code files to locate class definitions, function calls, or configuration keys.",
+    "parameters": [
+      {
+        "name": "pattern",
+        "type": "string",
+        "description": "The text pattern or regular expression to search for.",
+        "required": true
+      },
+      {
+        "name": "file_extensions",
+        "type": "array",
+        "description": "Filter files to search by extensions (e.g. ['.go', '.json']).",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "grep_code(pattern='NewSearchEngine', file_extensions=['.go'])",
+        "description": "Locate NewSearchEngine instantiation in Go source files"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "Matches found, indicating file path, line numbers, and matching content line snippet."
+    },
+    "usage_count": 95
+  },
+  {
+    "id": "run_project_tests",
+    "description": "Compile and execute the Go package test suite automatically, generating code coverage metrics and reporting test failures.",
+    "parameters": [
+      {
+        "name": "package_path",
+        "type": "string",
+        "description": "Specific Go package folder to test, defaults to all packages ('./...').",
+        "required": false
+      },
+      {
+        "name": "run_pattern",
+        "type": "string",
+        "description": "Specific test function name pattern to run (e.g. TestSearchEngine).",
+        "required": false
+      },
+      {
+        "name": "enable_coverage",
+        "type": "bool",
+        "description": "Generate a test coverage profile report, defaults to false.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "run_project_tests(run_pattern='TestLoadConfig')",
+        "description": "Run the configuration loader unit test"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Test results summary detailing exit code, test stdout/stderr report, elapsed time, and coverage percent."
+    },
+    "usage_count": 88
+  },
+  {
+    "id": "verify_compilation",
+    "description": "Compile the Go project files to verify syntax, imports, and cross-package dependencies without generating a final binary executable.",
+    "parameters": [
+      {
+        "name": "target_os",
+        "type": "string",
+        "description": "Target OS architecture to compile for (linux, darwin, windows).",
+        "required": false
+      },
+      {
+        "name": "verbose",
+        "type": "bool",
+        "description": "Enable verbose compilation output logging, defaults to false.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "verify_compilation(target_os='linux')",
+        "description": "Verify compilation compatibility on Linux OS"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Report containing status (success/failed), error details if compilation failed, and warning outputs."
+    },
+    "usage_count": 72
+  },
+  {
+    "id": "check_git_changes",
+    "description": "Query the Git version control system to identify modified files, untracked files, or uncommitted changes in the active working directory.",
+    "parameters": [
+      {
+        "name": "include_diff",
+        "type": "bool",
+        "description": "Include detailed git diff lines in the returned results, defaults to false.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "check_git_changes(include_diff=true)",
+        "description": "Check git repository status including modified code lines diff"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Summary containing current branch, modified files list, untracked files list, and optional diff string."
+    },
+    "usage_count": 42
+  },
+  {
+    "id": "manage_tool_registry",
+    "description": "Manage the tools stored in the SurrealDB vector database registry. Supports listing all tools, viewing details, creating/registering a tool, and deleting a tool.",
+    "parameters": [
+      {
+        "name": "action",
+        "type": "string",
+        "description": "The management action to perform: 'list', 'view', 'create', 'delete'.",
+        "required": true
+      },
+      {
+        "name": "tool_id",
+        "type": "string",
+        "description": "The unique identifier of the tool (required for 'view', 'create', 'delete').",
+        "required": false
+      },
+      {
+        "name": "definition_path",
+        "type": "string",
+        "description": "Path to a JSON file containing the tool definition schema (required for 'create').",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "manage_tool_registry(action='list')",
+        "description": "List all active tools registered in the database"
+      },
+      {
+        "usage": "manage_tool_registry(action='delete', tool_id='obsolete_tool')",
+        "description": "Remove an obsolete tool from the registry"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Details showing list of tools, schema content, or operation success status."
+    },
+    "usage_count": 25
+  },
+  {
+    "id": "manage_database_daemon",
+    "description": "Manage the embedded SurrealDB daemon process lifecycle. Supports starting the daemon, stopping the daemon, checking running status, and viewing daemon console output logs.",
+    "parameters": [
+      {
+        "name": "action",
+        "type": "string",
+        "description": "The database lifecycle action to perform: 'start', 'stop', 'status', 'logs'.",
+        "required": true
+      },
+      {
+        "name": "log_lines",
+        "type": "int",
+        "description": "Number of console log lines to display (only applicable for 'logs' action), defaults to 15.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "manage_database_daemon(action='start')",
+        "description": "Start the SurrealDB background process"
+      },
+      {
+        "usage": "manage_database_daemon(action='status')",
+        "description": "Display process ID (PID) and status of SurrealDB daemon"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Status report detailing process state, PID, or logs text."
+    },
+    "usage_count": 10
+  },
+  {
+    "id": "format_and_lint_code",
+    "description": "Run code formatters and static analysis linters (like gofmt, pylint, eslint, black) on source files to verify code style and detect syntax warnings.",
+    "parameters": [
+      {
+        "name": "file_path",
+        "type": "string",
+        "description": "Path to the source code file to format or lint.",
+        "required": true
+      },
+      {
+        "name": "auto_fix",
+        "type": "bool",
+        "description": "Automatically apply formatting and lint corrections if supported by the tool.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "format_and_lint_code(file_path='main.go', auto_fix=true)",
+        "description": "Format and fix style errors in main.go"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Lint report listing style issues, syntax errors, and status of auto-fixes."
+    },
+    "usage_count": 8
+  },
+  {
+    "id": "manage_system_service",
+    "description": "Control system service states (start, stop, restart, enable, disable, status) on the host machine using systemd controls.",
+    "parameters": [
+      {
+        "name": "service_name",
+        "type": "string",
+        "description": "Name of the target service (e.g., nginx, docker, ssh).",
+        "required": true
+      },
+      {
+        "name": "action",
+        "type": "string",
+        "description": "Service lifecycle action to perform: 'start', 'stop', 'restart', 'status'.",
+        "required": true
+      }
+    ],
+    "examples": [
+      {
+        "usage": "manage_system_service(service_name='nginx', action='restart')",
+        "description": "Restart nginx web server service"
+      },
+      {
+        "usage": "manage_system_service(service_name='docker', action='status')",
+        "description": "Check status of docker daemon"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "Execution result including command exit code and stdout/stderr output from systemctl."
+    },
+    "usage_count": 14
+  },
+  {
+    "id": "audit_system_logs",
+    "description": "Audit security and authentication logs (e.g. /var/log/auth.log, /var/log/secure) to discover failed logins, root privilege escalations, or SSH access events.",
+    "parameters": [
+      {
+        "name": "max_entries",
+        "type": "int",
+        "description": "Maximum number of recent log lines or events to analyze, defaults to 100.",
+        "required": false
+      },
+      {
+        "name": "grep_filter",
+        "type": "string",
+        "description": "Optional keyword pattern filter (e.g. 'failed', 'sudo', 'root').",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "audit_system_logs(max_entries=200, grep_filter='failed')",
+        "description": "Audit security logs for failed login attempts"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "List of parsed log audit events containing timestamp, host, process, and warning description."
+    },
+    "usage_count": 6
+  },
+  {
+    "id": "scan_network_ports",
+    "description": "Perform a network port scan against a specified target IP or host to identify open ports, active services, and potential vulnerabilities.",
+    "parameters": [
+      {
+        "name": "target_host",
+        "type": "string",
+        "description": "Domain name or IP address to scan (e.g. localhost, 192.168.1.1).",
+        "required": true
+      },
+      {
+        "name": "port_range",
+        "type": "string",
+        "description": "Range of ports to scan (e.g., '22-80', '1-1024', or '80,443'), defaults to '1-1024'.",
+        "required": false
+      },
+      {
+        "name": "scan_type",
+        "type": "string",
+        "description": "Scan method to employ: 'TCP-SYN', 'TCP-Connect', defaults to 'TCP-Connect'.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "scan_network_ports(target_host='localhost', port_range='80,443,8000')",
+        "description": "Scan ports 80, 443, and 8000 on localhost"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "List of open ports found, including port number, protocol, state (open/closed), and guessed service name."
+    },
+    "usage_count": 18
+  },
+  {
+    "id": "scan_secret_leaks",
+    "description": "Scans directories and source code files for sensitive hardcoded secrets, such as private keys, API tokens, passwords, and access credentials.",
+    "parameters": [
+      {
+        "name": "target_directory",
+        "type": "string",
+        "description": "Absolute or relative directory path to search.",
+        "required": true
+      },
+      {
+        "name": "exclude_patterns",
+        "type": "array",
+        "description": "List of file glob patterns to skip (e.g. ['.git', 'node_modules']).",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "scan_secret_leaks(target_directory='/root/project')",
+        "description": "Scan project folder for credentials"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "List of potential credential leaks found, including file name, line number, pattern matched, and obfuscated secret snippet."
+    },
+    "usage_count": 21
+  },
+  {
+    "id": "scan_vulnerable_dependencies",
+    "description": "Scan application dependency lockfiles (such as go.sum, package-lock.json, requirements.txt) against known vulnerability databases (e.g. OSV, CVE) to detect outdated or insecure libraries.",
+    "parameters": [
+      {
+        "name": "project_directory",
+        "type": "string",
+        "description": "Path to the project directory containing dependency files.",
+        "required": true
+      },
+      {
+        "name": "ignore_dev",
+        "type": "bool",
+        "description": "Skip scanning development-only dependencies, defaults to false.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "scan_vulnerable_dependencies(project_directory='/root/project', ignore_dev=true)",
+        "description": "Scan project production dependencies for vulnerabilities"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "List of insecure packages found, including package name, installed version, fixed version, CVE ID, and severity level."
+    },
+    "usage_count": 12
+  },
+  {
+    "id": "audit_ssl_tls_config",
+    "description": "Analyze the TLS/SSL configuration, supported cipher suites, protocol versions (e.g. TLS 1.0, 1.3), and certificate validity of a target web endpoint to find insecure encryption settings.",
+    "parameters": [
+      {
+        "name": "target_url",
+        "type": "string",
+        "description": "Target hostname or endpoint address to audit (e.g. secure.example.com).",
+        "required": true
+      }
+    ],
+    "examples": [
+      {
+        "usage": "audit_ssl_tls_config(target_url='example.com')",
+        "description": "Audit SSL/TLS cipher suites and certificate expiration on example.com"
+      }
+    ],
+    "return_type": {
+      "type": "object",
+      "description": "TLS audit report detailing supported protocol versions, weak ciphers, and certificate status."
+    },
+    "usage_count": 9
+  },
+  {
+    "id": "add_agent_memory",
+    "description": "Save a text fact, configuration preference, architectural decision, or task log in the persistent agent memory database. This allows persisting context across CLI sessions and agent runs.",
+    "parameters": [
+      {
+        "name": "content",
+        "type": "string",
+        "description": "The actual factual statement, preference description, or execution log details to save.",
+        "required": true
+      },
+      {
+        "name": "session",
+        "type": "string",
+        "description": "The isolated session namespace/context (e.g., project name, active git branch, or 'global' for cross-session preferences).",
+        "required": true
+      },
+      {
+        "name": "category",
+        "type": "string",
+        "description": "Type of memory: 'preference' (guidelines), 'episodic' (general facts), or 'task_log' (execution logs). Defaults to 'episodic'.",
+        "required": false
+      },
+      {
+        "name": "task_id",
+        "type": "string",
+        "description": "Optional background task identifier to associate with log entries.",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "rtk ./sts-surreal -memory-add \"User prefers Docker deployments on port 8080\" -session \"web-app\" -category \"preference\"",
+        "description": "Save a project-scoped deployment preference"
+      },
+      {
+        "usage": "rtk ./sts-surreal -memory-add \"Build failed: compiler error in main.go:45\" -session \"web-app\" -category \"task_log\" -task-id \"task_101\"",
+        "description": "Record an execution log entry for a specific task"
+      }
+    ],
+    "return_type": {
+      "type": "string",
+      "description": "Confirmation message containing the saved record ID."
+    },
+    "usage_count": 15
+  },
+  {
+    "id": "query_agent_memory",
+    "description": "Retrieve relevant context, decisions, and configuration preferences from the agent memory database using semantic (KNN) vector similarity. Returns both session-specific and global matches.",
+    "parameters": [
+      {
+        "name": "query",
+        "type": "string",
+        "description": "The search query or task context to find matching memories for.",
+        "required": true
+      },
+      {
+        "name": "session",
+        "type": "string",
+        "description": "The active session namespace/context (e.g., project name, git branch). Will automatically include global memories.",
+        "required": true
+      }
+    ],
+    "examples": [
+      {
+        "usage": "rtk ./sts-surreal -memory-query \"deployment port preferences\" -session \"web-app\"",
+        "description": "Retrieve configuration preferences related to deployment port"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "List of matching memory entries with their ID, category, content, and timestamp."
+    },
+    "usage_count": 20
+  },
+  {
+    "id": "list_agent_memories",
+    "description": "List episodic context entries, preferences, or task progress logs in chronological (time-series) order for a specific session namespace.",
+    "parameters": [
+      {
+        "name": "session",
+        "type": "string",
+        "description": "The target session namespace to list.",
+        "required": true
+      },
+      {
+        "name": "category",
+        "type": "string",
+        "description": "Optional filter to restrict results to a specific category (e.g., 'task_log', 'preference').",
+        "required": false
+      }
+    ],
+    "examples": [
+      {
+        "usage": "rtk ./sts-surreal -memory-list -session \"web-app\" -category \"task_log\"",
+        "description": "View the execution log history for the web-app session"
+      }
+    ],
+    "return_type": {
+      "type": "array",
+      "description": "Chronological list of memory entries matching the filters."
+    },
+    "usage_count": 10
+  },
+  {
+    "id": "clear_agent_session",
+    "description": "Purge all memory entries associated with a specific session namespace to ensure session isolation and start with a clean slate. Does not delete global memories.",
+    "parameters": [
+      {
+        "name": "session",
+        "type": "string",
+        "description": "The session namespace to clear.",
+        "required": true
+      }
+    ],
+    "examples": [
+      {
+        "usage": "rtk ./sts-surreal -memory-clear -session \"web-app\"",
+        "description": "Wipe all memories for the web-app session"
+      }
+    ],
+    "return_type": {
+      "type": "string",
+      "description": "Confirmation status indicating successful cleanup."
+    },
+    "usage_count": 5
+  },
+  {
+    "id": "optimize_prompt_context",
+    "description": "Optimize and compress wordy text prompts, application log dumps, stack traces, or large file contents to extract the core instruction and remove redundant chunks before routing to the main LLM. This significantly reduces token usage.",
+    "parameters": [
+      {
+        "name": "text_content",
+        "type": "string",
+        "description": "The raw wordy text, console output, stack trace, or file contents to optimize.",
+        "required": true
+      }
+    ],
+    "examples": [
+      {
+        "usage": "rtk ./sts-surreal -optimize-text \"[ERROR] 2026-06-18T14:55:14 ... compiler error in main.go:45 ... (repeated 50 times)\"",
+        "description": "Optimize and compress a redundant stack trace error log dump"
+      }
+    ],
+    "return_type": {
+      "type": "string",
+      "description": "A formatted optimized text block containing the extracted core intent and relevant deduplicated chunks."
+    },
+    "usage_count": 15
+  }
+]
