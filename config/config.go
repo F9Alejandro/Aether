@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
@@ -60,7 +61,33 @@ func getEnvOrFile(envKey string, fileVal string, defaultVal string) string {
 func LoadConfig() *Config {
 	configPath := os.Getenv("STS_CONFIG_FILE")
 	if configPath == "" {
-		configPath = "config.json"
+		if _, err := os.Stat("config.json"); err == nil {
+			configPath = "config.json"
+		} else {
+			// Check user home/config directories
+			home, err := os.UserHomeDir()
+			if err == nil {
+				unixPath := filepath.Join(home, ".config", "aether", "config.json")
+				
+				appData := os.Getenv("APPDATA")
+				var winPath string
+				if appData != "" {
+					winPath = filepath.Join(appData, "aether", "config.json")
+				} else {
+					winPath = filepath.Join(home, "AppData", "Roaming", "aether", "config.json")
+				}
+
+				if _, err := os.Stat(unixPath); err == nil {
+					configPath = unixPath
+				} else if _, err := os.Stat(winPath); err == nil {
+					configPath = winPath
+				} else {
+					configPath = "config.json" // Fallback to cwd search
+				}
+			} else {
+				configPath = "config.json"
+			}
+		}
 	}
 
 	var fileCfg jsonConfig
