@@ -1,0 +1,29 @@
+{
+  "id": "sample_tool_name",
+  "description": "Provide a high-level explanation of the tool's core capabilities, explaining when and why it should be used by the agent.",
+  "parameters": [
+    {
+      "name": "param_name",
+      "type": "string",
+      "description": "Describe the parameter's purpose, expected formats, or allowed values.",
+      "required": true
+    },
+    {
+      "name": "optional_param",
+      "type": "int",
+      "description": "Describe this optional parameter. Mention default fallback values here.",
+      "required": false
+    }
+  ],
+  "examples": [
+    {
+      "usage": "sample_tool_name(param_name='value', optional_param=42)",
+      "description": "Explain what this specific invocation is testing or achieving in the task context."
+    }
+  ],
+  "return_type": {
+    "type": "object",
+    "description": "Provide a detailed schema of the returned output (e.g. fields, status flags, metrics)."
+  },
+  "usage_count": 1
+}
