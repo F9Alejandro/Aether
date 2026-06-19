@@ -33,6 +33,15 @@ To keep context windows clean and persist design decisions across turns:
    rtk /root/STS-surreal/sts-surreal -memory-add "Log: <concise log details>" -session "<session_id>" -category "task_log" -task-id "<task_id>"
    ```
 
+## 🛠️ Custom Tool Creation & Registration
+
+To extend capabilities, you can dynamically register custom tools, helper scripts, or administration utilities:
+1. Format your tool in JSON according to [TOOL_FORMAT.md](file:///root/STS-surreal/TOOL_FORMAT.md).
+2. Register it into the vector database using:
+   ```bash
+   rtk /root/STS-surreal/sts-surreal -manage create -tool-def /path/to/new_tool.json
+   ```
+
 ## 📉 Token Optimization for Commands & Logs
 
 To keep context windows small and avoid bloating history logs:
