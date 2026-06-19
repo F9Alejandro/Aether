@@ -7,7 +7,7 @@ This project implements a semantic tool selection filter and associative agent m
 Before proposing or executing any complex task requiring multiple tool calls or design considerations, you **MUST** run the user prompt through the semantic selector under your active session to identify both matching tools and recalled memory preferences in a single step:
 
 ```bash
-rtk /root/STS-surreal/sts-surreal -query "<brief description of the user request>" -session "<session_id>"
+rtk /root/STS-surreal/aether -query "<brief description of the user request>" -session "<session_id>"
 ```
 
 - Running this command automatically exports the complete JSON schema definitions of the matched tools to the workspace file `.agents/recommended_tools.json`.
@@ -22,15 +22,15 @@ To keep context windows clean and persist design decisions across turns:
 1. **Isolate Sessions**: Run all memory operations under a specific session namespace using the `-session "<session_id>"` flag (e.g. matching your active workspace name or active branch).
 2. **Recall Memories Independently**: If you need to search memories without selecting tools, run a semantic memory query using:
    ```bash
-   rtk /root/STS-surreal/sts-surreal -memory-query "<task context or question>" -session "<session_id>"
+   rtk /root/STS-surreal/aether -memory-query "<task context or question>" -session "<session_id>"
    ```
 3. **Commit New Memories**: After completing a feature, resolving a bug, or making a critical architectural decision, save it in the memory database:
    ```bash
-   rtk /root/STS-surreal/sts-surreal -memory-add "Decision: <concise summary of the architectural choice or feature state>" -session "<session_id>" -category "preference"
+   rtk /root/STS-surreal/aether -memory-add "Decision: <concise summary of the architectural choice or feature state>" -session "<session_id>" -category "preference"
    ```
 4. **Log Task Progress**: For background tasks, log key outputs or execution logs to the database for future lookback:
    ```bash
-   rtk /root/STS-surreal/sts-surreal -memory-add "Log: <concise log details>" -session "<session_id>" -category "task_log" -task-id "<task_id>"
+   rtk /root/STS-surreal/aether -memory-add "Log: <concise log details>" -session "<session_id>" -category "task_log" -task-id "<task_id>"
    ```
 
 ## 🛠️ Custom Tool Creation & Registration
@@ -39,7 +39,7 @@ To extend capabilities, you can dynamically register custom tools, helper script
 1. Format your tool in JSON according to [TOOL_FORMAT.md](file:///root/STS-surreal/TOOL_FORMAT.md).
 2. Register it into the vector database using:
    ```bash
-   rtk /root/STS-surreal/sts-surreal -manage create -tool-def /path/to/new_tool.json
+   rtk /root/STS-surreal/aether -manage create -tool-def /path/to/new_tool.json
    ```
 
 ## 📉 Token Optimization for Commands & Logs

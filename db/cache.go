@@ -7,7 +7,7 @@ import (
 	"time"
 
 	surrealdb "github.com/surrealdb/surrealdb.go"
-	"sts-surreal/models"
+	"aether/models"
 )
 
 // ExactCacheResult holds query result for literal exact matches.

@@ -7,7 +7,7 @@ import (
 
 	"github.com/surrealdb/surrealdb.go"
 	dbmodels "github.com/surrealdb/surrealdb.go/pkg/models"
-	"sts-surreal/models"
+	"aether/models"
 )
 
 // SurrealClient manages connections and database operations for SurrealDB.

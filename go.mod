@@ -1,4 +1,4 @@
-module sts-surreal
+module aether
 
 go 1.24.4
 

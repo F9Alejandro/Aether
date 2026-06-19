@@ -1,6 +1,6 @@
 package tools
 
-import "sts-surreal/models"
+import "aether/models"
 
 // GetLibrary returns a slice of standard enterprise tools for database seeding.
 func GetLibrary() []models.Tool {

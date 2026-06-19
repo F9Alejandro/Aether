@@ -166,11 +166,11 @@ func (dm *DaemonManager) Start(ctx context.Context) error {
 		execCmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	} else if _, err := exec.LookPath("docker"); err == nil {
 		// Fallback to Docker
-		fmt.Println("🐳 Local 'surreal' binary not found. Spawning via Docker container 'sts-surrealdb' in daemon mode...")
+		fmt.Println("🐳 Local 'surreal' binary not found. Spawning via Docker container 'aetherdb' in daemon mode...")
 		dm.isDocker = true
 		// Make sure any previous container is removed
-		_ = exec.Command("docker", "rm", "-f", "sts-surrealdb").Run()
-		execCmd = exec.Command("docker", "run", "-d", "--name", "sts-surrealdb", "-p", "8000:8000", "-v", dataPath+":/data", "surrealdb/surrealdb:latest", "start", "--user", "root", "--pass", "root", "surrealkv://data")
+		_ = exec.Command("docker", "rm", "-f", "aetherdb").Run()
+		execCmd = exec.Command("docker", "run", "-d", "--name", "aetherdb", "-p", "8000:8000", "-v", dataPath+":/data", "surrealdb/surrealdb:latest", "start", "--user", "root", "--pass", "root", "surrealkv://data")
 	} else {
 		return fmt.Errorf("no database daemon found. Run ':db install' (interactive) or '-db install' (CLI) to automatically install the static SurrealDB binary")
 	}
@@ -212,10 +212,10 @@ func (dm *DaemonManager) Start(ctx context.Context) error {
 		time.Sleep(1 * time.Second)
 		
 		// Confirm container is running
-		inspectOut, err := exec.Command("docker", "inspect", "-f", "{{.State.Running}}", "sts-surrealdb").Output()
+		inspectOut, err := exec.Command("docker", "inspect", "-f", "{{.State.Running}}", "aetherdb").Output()
 		if err != nil || strings.TrimSpace(string(inspectOut)) != "true" {
 			// Container exited or failed
-			dockerLogs, _ := exec.Command("docker", "logs", "sts-surrealdb").CombinedOutput()
+			dockerLogs, _ := exec.Command("docker", "logs", "aetherdb").CombinedOutput()
 			return fmt.Errorf("Docker container failed to start: %s", string(dockerLogs))
 		}
 	} else {
@@ -248,9 +248,9 @@ func (dm *DaemonManager) Stop() error {
 	}
 
 	if dm.isDocker {
-		fmt.Println("Stopping Docker container 'sts-surrealdb'...")
-		_ = exec.Command("docker", "stop", "sts-surrealdb").Run()
-		_ = exec.Command("docker", "rm", "sts-surrealdb").Run()
+		fmt.Println("Stopping Docker container 'aetherdb'...")
+		_ = exec.Command("docker", "stop", "aetherdb").Run()
+		_ = exec.Command("docker", "rm", "aetherdb").Run()
 		_ = os.Remove(dockerPath)
 		_ = os.Remove(pidPath)
 		fmt.Println("🛑 SurrealDB daemon container stopped and removed.")
@@ -298,9 +298,9 @@ func (dm *DaemonManager) Status() string {
 	}
 
 	if dm.isDocker {
-		out, err := exec.Command("docker", "inspect", "-f", "{{.State.Running}}", "sts-surrealdb").Output()
+		out, err := exec.Command("docker", "inspect", "-f", "{{.State.Running}}", "aetherdb").Output()
 		if err == nil && strings.TrimSpace(string(out)) == "true" {
-			return "Running (via Docker container 'sts-surrealdb')"
+			return "Running (via Docker container 'aetherdb')"
 		}
 		return "Stopped"
 	}
@@ -341,7 +341,7 @@ func (dm *DaemonManager) ShowLogs(n int) ([]string, error) {
 	}
 
 	if dm.isDocker {
-		out, err := exec.Command("docker", "logs", "--tail", strconv.Itoa(n), "sts-surrealdb").CombinedOutput()
+		out, err := exec.Command("docker", "logs", "--tail", strconv.Itoa(n), "aetherdb").CombinedOutput()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get docker logs: %w", err)
 		}

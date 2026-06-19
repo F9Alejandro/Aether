@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"sts-surreal/db"
-	"sts-surreal/embedding"
-	"sts-surreal/models"
+	"aether/db"
+	"aether/embedding"
+	"aether/models"
 )
 
 // SearchEngine handles semantic search operations across tool components.

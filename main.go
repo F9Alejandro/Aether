@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"sts-surreal/config"
-	"sts-surreal/db"
-	"sts-surreal/embedding"
-	"sts-surreal/models"
-	"sts-surreal/search"
-	"sts-surreal/tools"
+	"aether/config"
+	"aether/db"
+	"aether/embedding"
+	"aether/models"
+	"aether/search"
+	"aether/tools"
 )
 
 func main() {
@@ -347,7 +347,7 @@ func runInteractiveLoop(ctx context.Context, client *db.SurrealClient, engine *s
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Println("\n=====================================================================")
-	fmt.Println("   🤖 Go & SurrealDB Semantic Tool Selection CLI Client 🤖")
+	fmt.Println("   🤖 Aether: Context Router & Agent Memory Engine 🤖")
 	fmt.Println("=====================================================================")
 	fmt.Println("Commands:")
 	fmt.Println("  :seed               Re-seed the database (generate embeddings)")
@@ -1015,10 +1015,10 @@ func initializeAgentRules(ctx context.Context, global bool, cliName string) {
 			if !strings.Contains(execPath, "/tmp/go-build") {
 				resolvedCLI = execPath
 			} else {
-				resolvedCLI = "sts-surreal"
+				resolvedCLI = "aether"
 			}
 		} else {
-			resolvedCLI = "sts-surreal"
+			resolvedCLI = "aether"
 		}
 	}
 

@@ -1,6 +1,6 @@
-# Semantic Tool Selection with Go, SurrealDB, and Gemini
+# Aether: Context Router & Agent Memory Engine
 
-This project implements a token-optimized **Semantic Tool Selection (STS)** system in **Go** using **SurrealDB** (replacing Redis) and **Gemini Embeddings** (replacing OpenAI).
+**Aether** (formerly `sts-surreal`) is a token-optimized Context Routing and Agent Memory database system in **Go** using **SurrealDB** and **Gemini Embeddings**.
 
 By matching user natural queries semantically to specific tool sub-components rather than sending all tools to the LLM on every query, this architecture reduces context sizes by **75–90%**, significantly lowering token costs and reducing latency.
 
@@ -99,33 +99,33 @@ Example `config.json`:
 
 ### 3. Build the Application
 ```bash
-go build -o sts-surreal
+go build -o aether
 ```
 
 ### 4. Seed the Database (Required initially)
 This wipes previous structures, creates tables, defines the HNSW index, generates component embeddings, and seeds the tools. By default, it loads from `tools.json` in the current working directory, falling back to the built-in Go registry if the file is not found:
 ```bash
 # Seed from tools.json (or built-in fallback)
-./sts-surreal -seed
+./aether -seed
 
 # Seed from a custom JSON file
-./sts-surreal -seed -seed-file custom_tools.json
+./aether -seed -seed-file custom_tools.json
 ```
 
 ### 5. Run Search Queries
 Query semantic tool selection with a natural language string:
 ```bash
-./sts-surreal -query "I need to notify the team on slack about the deployment status"
+./aether -query "I need to notify the team on slack about the deployment status"
 ```
 To run query with scoring breakdown logs:
 ```bash
-./sts-surreal -query "I need to notify the team on slack" -debug
+./aether -query "I need to notify the team on slack" -debug
 ```
 
 ### 6. Interactive Mode
 Run the application in interactive console mode:
 ```bash
-./sts-surreal
+./aether
 ```
 Within the interactive console:
 - Just type any search query (e.g. `run database backup`)
@@ -144,16 +144,16 @@ Manage tools dynamically in the database without recompiling:
 **Via CLI Flags:**
 ```bash
 # List registered tools
-./sts-surreal -manage list
+./aether -manage list
 
 # View tool details
-./sts-surreal -manage view -tool-id execute_hex_code
+./aether -manage view -tool-id execute_hex_code
 
 # Remove a tool
-./sts-surreal -manage delete -tool-id obsolete_tool
+./aether -manage delete -tool-id obsolete_tool
 
 # Register a tool from a JSON file
-./sts-surreal -manage create -tool-def new_tool.json
+./aether -manage create -tool-def new_tool.json
 ```
 
 ### 8. Manage the Database Daemon
@@ -162,16 +162,16 @@ Manage the lifecycle of a self-contained SurrealDB background process (daemon) t
 **Via CLI Flags:**
 ```bash
 # Start the background daemon process
-./sts-surreal -db start
+./aether -db start
 
 # Display the running status and PID of the daemon
-./sts-surreal -db status
+./aether -db status
 
 # View the last 15 lines of database output logs
-./sts-surreal -db logs --db-logs-count 15
+./aether -db logs --db-logs-count 15
 
 # Terminate the background daemon
-./sts-surreal -db stop
+./aether -db stop
 ```
 
 ### 9. Prompt Optimization Pipeline (Token-Saving Filter)
@@ -180,7 +180,7 @@ Compress and optimize wordy, log-heavy, or repetitive queries before executing t
 **Via CLI Flags:**
 ```bash
 # Optimize query and perform tool selection on the compressed core intent
-./sts-surreal -query "Here are my server logs... I need to query the database..." -optimize
+./aether -query "Here are my server logs... I need to query the database..." -optimize
 ```
 
 **Via Interactive Console:**
@@ -200,13 +200,13 @@ Automatically generate or append Semantic Tool Selection rules to the agent rule
 **Via CLI Flags:**
 ```bash
 # Initialize local workspace rules (.agents/AGENTS.md)
-./sts-surreal -init
+./aether -init
 
 # Initialize local workspace rules with a custom CLI command/name
-./sts-surreal -init -init-name "my-custom-sts"
+./aether -init -init-name "my-custom-sts"
 
 # Initialize global rules to apply rules across all workspaces
-./sts-surreal -init -init-global
+./aether -init -init-global
 ```
 
 ### 11. Agent Memory Manager
@@ -221,19 +221,19 @@ Chronological logging allows logging events, outputs, and status checks over tim
 **CLI Memory Commands:**
 ```bash
 # Add a workspace-specific preference memory
-./sts-surreal -memory-add "The user's code files must always be stored in '/root/project'." -session "my-workspace" -category "preference"
+./aether -memory-add "The user's code files must always be stored in '/root/project'." -session "my-workspace" -category "preference"
 
 # Add a global user instruction/preference (persistent across all sessions)
-./sts-surreal -memory-add "The user prefers Go over Python." -session "global" -category "preference"
+./aether -memory-add "The user prefers Go over Python." -session "global" -category "preference"
 
 # Semantically query session memories (returns both session-specific and global matches)
-./sts-surreal -memory-query "Where should code files be stored?" -session "my-workspace"
+./aether -memory-query "Where should code files be stored?" -session "my-workspace"
 
 # View chronological memory logs
-./sts-surreal -memory-list -session "my-workspace" -category "preference"
+./aether -memory-list -session "my-workspace" -category "preference"
 
 # Clear memory for a specific session namespace (starts with a clean slate)
-./sts-surreal -memory-clear -session "my-workspace"
+./aether -memory-clear -session "my-workspace"
 ```
 
 **Interactive Console Commands:**

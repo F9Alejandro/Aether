@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"sts-surreal/embedding"
+	"aether/embedding"
 )
 
 // PromptOptimizer manages context size reduction pipelines including chunking, deduplication, and cascading intent extraction.
