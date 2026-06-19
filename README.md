@@ -1,5 +1,7 @@
 # Aether: Context Router & Agent Memory Engine
 
+![Aether Banner](file:///root/STS-surreal/assets/banner.jpg)
+
 **Aether** (formerly `sts-surreal`) is a token-optimized Context Routing and Agent Memory database system in **Go** using **SurrealDB** and **Gemini Embeddings**.
 
 By matching user natural queries semantically to specific tool sub-components rather than sending all tools to the LLM on every query, this architecture reduces context sizes by **75–90%**, significantly lowering token costs and reducing latency.
