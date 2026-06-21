@@ -73,11 +73,16 @@ Tools are sorted descending by score. The list is sliced dynamically by checking
 
 ## 🚀 How to Run the Program
 
-### 1. Prerequisite: SurrealDB Database Instance
-SurrealDB must be running. If not already up, you can start it via Docker:
+### 1. Database Setup (Self-Contained Daemon or External DB)
+A dedicated, external SurrealDB database is **NOT** required to run Aether. The application features a self-contained background daemon manager that automates the database lifecycle.
+
+To start the database automatically, run:
 ```bash
-docker run --name surrealdb -d -p 8000:8000 surrealdb/surrealdb:latest start --user root --pass root
+./aether -db start
 ```
+*If a static `surreal` binary is not found locally, the daemon manager will automatically try to spawn a background Docker container (`aetherdb`) as a fallback, or you can run `./aether -db install` to download the static binary.*
+
+If you prefer to connect to an existing, dedicated SurrealDB instance or cluster, simply update the `surreal_url` in your `config.json`.
 
 ### 2. Configuration & Fallbacks (JSON or Environment Variables)
 
