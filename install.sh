@@ -87,6 +87,6 @@ if [ "$PATH_INCLUDED" = false ]; then
     echo -e "Then reload your shell: ${BOLD}source ~/.bashrc${NC} (or config of choice)."
 else
     echo -e "${GREEN}✨ Excellent: ~/.local/bin is already in your PATH!${NC}"
-    echo -e "You can now run ${BOLD}aether -seed${NC} or ${BOLD}aether -query \"my query\"${NC} globally."
+    echo -e "You can now run ${BOLD}aether seed${NC} or ${BOLD}aether query \"my query\"${NC} globally."
 fi
 echo -e "${BOLD}${BLUE}=====================================================${NC}"

@@ -1,6 +1,6 @@
 # Aether: Context Router & Agent Memory Engine
 
-![Aether Banner](file:///root/STS-surreal/assets/banner.jpg)
+![Aether Banner](assets/banner.jpg)
 
 **Aether** (formerly `sts-surreal`) is a token-optimized Context Routing and Agent Memory database system in **Go** using **SurrealDB** and **Gemini Embeddings**.
 
@@ -10,7 +10,7 @@ By matching user natural queries semantically to specific tool sub-components ra
 
 ## 🏗️ Architecture Comparison
 
-| Feature | Original (Article) | Our Implementation |
+| Feature | [Original Article](https://mlops.community/how-i-reduced-ai-token-costs-by-91-with-semantic-tool-selection-and-redis/) | Our Implementation |
 | :--- | :--- | :--- |
 | **Language** | Node.js / Python | Go (Golang) |
 | **Vector Store** | Redis Stack (HNSW) | **SurrealDB** (HNSW Vector Indexing) |
@@ -78,9 +78,9 @@ A dedicated, external SurrealDB database is **NOT** required to run Aether. The 
 
 To start the database automatically, run:
 ```bash
-./aether -db start
+./aether db start
 ```
-*If a static `surreal` binary is not found locally, the daemon manager will automatically try to spawn a background Docker container (`aetherdb`) as a fallback, or you can run `./aether -db install` to download the static binary.*
+*If a static `surreal` binary is not found locally, the daemon manager will automatically try to spawn a background Docker container (`aetherdb`) as a fallback, or you can run `./aether db install` to download the static binary.*
 
 If you prefer to connect to an existing, dedicated SurrealDB instance or cluster, simply update the `surreal_url` in your `config.json`.
 
@@ -113,20 +113,20 @@ go build -o aether
 This wipes previous structures, creates tables, defines the HNSW index, generates component embeddings, and seeds the tools. By default, it loads from `tools.json` in the current working directory, falling back to the built-in Go registry if the file is not found:
 ```bash
 # Seed from tools.json (or built-in fallback)
-./aether -seed
+./aether seed
 
 # Seed from a custom JSON file
-./aether -seed -seed-file custom_tools.json
+./aether seed -file custom_tools.json
 ```
 
 ### 5. Run Search Queries
 Query semantic tool selection with a natural language string:
 ```bash
-./aether -query "I need to notify the team on slack about the deployment status"
+./aether query "I need to notify the team on slack about the deployment status"
 ```
 To run query with scoring breakdown logs:
 ```bash
-./aether -query "I need to notify the team on slack" -debug
+./aether query -debug "I need to notify the team on slack"
 ```
 
 ### 6. Interactive Mode
@@ -151,16 +151,16 @@ Manage tools dynamically in the database without recompiling:
 **Via CLI Flags:**
 ```bash
 # List registered tools
-./aether -manage list
+./aether manage list
 
 # View tool details
-./aether -manage view -tool-id execute_hex_code
+./aether manage view -tool-id execute_hex_code
 
 # Remove a tool
-./aether -manage delete -tool-id obsolete_tool
+./aether manage delete -tool-id obsolete_tool
 
 # Register a tool from a JSON file
-./aether -manage create -tool-def new_tool.json
+./aether manage create -tool-def new_tool.json
 ```
 
 ### 8. Manage the Database Daemon
@@ -169,16 +169,16 @@ Manage the lifecycle of a self-contained SurrealDB background process (daemon) t
 **Via CLI Flags:**
 ```bash
 # Start the background daemon process
-./aether -db start
+./aether db start
 
 # Display the running status and PID of the daemon
-./aether -db status
+./aether db status
 
 # View the last 15 lines of database output logs
-./aether -db logs --db-logs-count 15
+./aether db logs -logs-count 15
 
 # Terminate the background daemon
-./aether -db stop
+./aether db stop
 ```
 
 ### 9. Prompt Optimization Pipeline (Token-Saving Filter)
@@ -187,7 +187,7 @@ Compress and optimize wordy, log-heavy, or repetitive queries before executing t
 **Via CLI Flags:**
 ```bash
 # Optimize query and perform tool selection on the compressed core intent
-./aether -query "Here are my server logs... I need to query the database..." -optimize
+./aether query -optimize "Here are my server logs... I need to query the database..."
 ```
 
 **Via Interactive Console:**
@@ -207,13 +207,13 @@ Automatically generate or append Semantic Tool Selection rules to the agent rule
 **Via CLI Flags:**
 ```bash
 # Initialize local workspace rules (.agents/AGENTS.md)
-./aether -init
+./aether init
 
 # Initialize local workspace rules with a custom CLI command/name
-./aether -init -init-name "my-custom-sts"
+./aether init -name "my-custom-sts"
 
 # Initialize global rules to apply rules across all workspaces
-./aether -init -init-global
+./aether init -global
 ```
 
 ### 11. Agent Memory Manager
@@ -223,24 +223,24 @@ Maintain long-term semantic context, task logs, and user preferences to reduce t
 Specify a `-session` namespace (such as a directory path, active branch name, or UUID). Global instructions and configuration preferences can be written under the `-session "global"` namespace, which are always returned during queries regardless of the active workspace session.
 
 **Chronological (Time-Series) Querying:**
-Chronological logging allows logging events, outputs, and status checks over time (e.g. using the `-category "task_log"` and `-task-id "<id>"` parameters). They can be listed sequentially using the `-memory-list` operation.
+Chronological logging allows logging events, outputs, and status checks over time (e.g. using the `-category "task_log"` and `-task-id "<id>"` parameters). They can be listed sequentially using the `memory list` operation.
 
 **CLI Memory Commands:**
 ```bash
 # Add a workspace-specific preference memory
-./aether -memory-add "The user's code files must always be stored in '/root/project'." -session "my-workspace" -category "preference"
+./aether memory add -session "my-workspace" -category "preference" "The user's code files must always be stored in '/root/project'."
 
 # Add a global user instruction/preference (persistent across all sessions)
-./aether -memory-add "The user prefers Go over Python." -session "global" -category "preference"
+./aether memory add -session "global" -category "preference" "The user prefers Go over Python."
 
 # Semantically query session memories (returns both session-specific and global matches)
-./aether -memory-query "Where should code files be stored?" -session "my-workspace"
+./aether memory query -session "my-workspace" "Where should code files be stored?"
 
 # View chronological memory logs
-./aether -memory-list -session "my-workspace" -category "preference"
+./aether memory list -session "my-workspace" -category "preference"
 
 # Clear memory for a specific session namespace (starts with a clean slate)
-./aether -memory-clear -session "my-workspace"
+./aether memory clear -session "my-workspace"
 ```
 
 **Interactive Console Commands:**

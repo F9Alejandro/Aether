@@ -1,36 +1,43 @@
 # Workspace Rules - Semantic Tool Selection (STS)
 
-This project implements a semantic tool selection filter and associative agent memory database to optimize context size. All agent sessions must adhere to the following rules to maximize token savings.
+This project implements **Aether**, an advanced agentic context routing and persistent memory engine. To optimize your context size (saving 75-90% of tokens), enforce architectural standards, and maintain project-wide coherence, you **MUST STRICTLY** adhere to this pipeline. **DO NOT SKIP OR BYPASS THESE RULES.**
 
-## 🛠️ Semantic Tool Filtering & Memory Recall Constraint (Unified Context Pipeline)
+## 🚨 MANDATORY PIPELINE (Execute on Turn 1)
 
-Before proposing or executing any complex task requiring multiple tool calls or design considerations, you **MUST** run the user prompt through the semantic selector under your active session to identify both matching tools and recalled memory preferences in a single step:
+Before you select any tools, call files, or propose any implementation plans, you **MUST** run the semantic context query to retrieve active tools and persistent memories:
 
 ```bash
-rtk /root/STS-surreal/aether -query "<brief description of the user request>" -session "<session_id>"
+/root/STS-surreal/aether query -session "<session_id>" "<brief description of the user request>"
+```
+*(Note: Do not wander to other folders/projects looking for aether tool source. Use the exact binary path provided above. If it is not found, use '/root/.local/bin/aether' or the PATH command 'aether'.)*
+
+### ⚠️ Self-Healing / Offline Database Startup
+If the query command fails with a connection error or indicates SurrealDB is offline, you **MUST** start the database background daemon first and then retry the query:
+```bash
+/root/STS-surreal/aether db start
+# Wait 1 second for the daemon to initialize, then run:
+/root/STS-surreal/aether query -session "<session_id>" "<brief description of the user request>"
 ```
 
-- Running this command automatically exports the complete JSON schema definitions of the matched tools to the workspace file `.agents/recommended_tools.json`.
-- It also performs semantic memory retrieval across the database, returning relevant workspace guidelines and global preferences in standard output.
-- **You MUST immediately read `.agents/recommended_tools.json`** to obtain the precise parameter and usage schemas of the recommended tools.
-- Do not inject all default tool schemas into your thinking or output context. For the duration of the current task, only refer to or use the schemas of the filtered tools found in `.agents/recommended_tools.json`.
-- Adopt the retrieved memory constraints, preferences, or past design decisions returned in stdout.
+### 📋 Post-Query Actions (Mandatory)
+1. **Immediately Read Recommended Tools**: You **MUST** read the file `.agents/recommended_tools.json` using your file viewing tool. This contains the exact schemas, parameters, and descriptions of the tools selected for this task.
+2. **Restrict Your Tool Usage**: For the duration of this task, you are **ONLY** permitted to invoke the tools explicitly listed in `.agents/recommended_tools.json`. Do not use default or general system-level tools for specialized tasks unless they are recommended.
+3. **Adopt Persistent Context**: Adopt all guidelines, preferences, and architectural constraints returned in the stdout of the 'aether query' command.
 
-## 🧠 Agent Memory & Logging Operations
+## 🧠 persistence & Memory Logging (Turn N / Task Completion)
 
-To keep context windows clean and persist design decisions across turns:
-1. **Isolate Sessions**: Run all memory operations under a specific session namespace using the `-session "<session_id>"` flag (e.g. matching your active workspace name or active branch).
-2. **Recall Memories Independently**: If you need to search memories without selecting tools, run a semantic memory query using:
+To keep context windows clean and persist design decisions across agent turns:
+1. **Commit Architectural Choices / Feature States**: When you complete a task, resolve a bug, or make an architectural decision, save it in the persistent memory:
    ```bash
-   rtk /root/STS-surreal/aether -memory-query "<task context or question>" -session "<session_id>"
+   /root/STS-surreal/aether memory add -session "<session_id>" -category "preference" "Decision: <concise summary of the architectural choice or feature state>"
    ```
-3. **Commit New Memories**: After completing a feature, resolving a bug, or making a critical architectural decision, save it in the memory database:
+2. **Recall Memories Independently**: If you need to search project memory without performing tool selection (e.g. to answer a question or check past work), query the memory store:
    ```bash
-   rtk /root/STS-surreal/aether -memory-add "Decision: <concise summary of the architectural choice or feature state>" -session "<session_id>" -category "preference"
+   /root/STS-surreal/aether memory query -session "<session_id>" "<task context or question>"
    ```
-4. **Log Task Progress**: For background tasks, log key outputs or execution logs to the database for future lookback:
+3. **Task and Execution Logs**: For long-running or background processes, log statuses periodically:
    ```bash
-   rtk /root/STS-surreal/aether -memory-add "Log: <concise log details>" -session "<session_id>" -category "task_log" -task-id "<task_id>"
+   /root/STS-surreal/aether memory add -session "<session_id>" -category "task_log" -task-id "<task_id>" "Log: <concise details>"
    ```
 
 ## 🛠️ Custom Tool Creation & Registration
@@ -39,11 +46,5 @@ To extend capabilities, you can dynamically register custom tools, helper script
 1. Format your tool in JSON according to [TOOL_FORMAT.md](file:///root/STS-surreal/TOOL_FORMAT.md).
 2. Register it into the vector database using:
    ```bash
-   rtk /root/STS-surreal/aether -manage create -tool-def /path/to/new_tool.json
+   /root/STS-surreal/aether manage create -tool-def /path/to/new_tool.json
    ```
-
-## 📉 Token Optimization for Commands & Logs
-
-To keep context windows small and avoid bloating history logs:
-- **Always prefix shell commands with `rtk`** (e.g., `rtk go test`, `rtk docker ps`, `rtk git status`).
-- When reading logs or verifying files, use `rtk`'s built-in log/stderr filtering capabilities to only display warnings or failures, stripping out boilerplates and successful execution logs.

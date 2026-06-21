@@ -61,7 +61,7 @@ Once your JSON definition is ready (e.g. `new_tool.json`), you can register it d
 ### Method A: Via CLI Management Flags
 Run this command from your terminal:
 ```bash
-rtk ./aether -manage create -tool-def /path/to/new_tool.json
+rtk ./aether manage create -tool-def /path/to/new_tool.json
 ```
 
 ### Method B: Via Interactive Console

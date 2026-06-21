@@ -24,96 +24,164 @@ func main() {
 	// 1. Load config
 	cfg := config.LoadConfig()
 
-	// Parse flags
-	seedFlag := flag.Bool("seed", false, "Seed the SurrealDB database with tools and generate embeddings")
-	seedFileFlag := flag.String("seed-file", "tools.json", "JSON file containing tools to seed (falls back to built-in registry if file not found)")
-	queryFlag := flag.String("query", "", "Run semantic tool selection for a natural language query")
-	optimizeFlag := flag.Bool("optimize", false, "Optimize and compress wordy prompts before tool selection")
-	optimizeTextFlag := flag.String("optimize-text", "", "Compress and optimize a large text prompt/log directly, printing the condensed version")
-	initFlag := flag.Bool("init", false, "Initialize agent rule configuration file (AGENTS.md)")
-	initGlobalFlag := flag.Bool("init-global", false, "Initialize rule configuration globally (affects all workspaces)")
-	initNameFlag := flag.String("init-name", "", "The executable name or command path to run in the rule (defaults to absolute path of this binary)")
-	execFlag := flag.String("execute", "", "Simulate execution of a tool by ID (increments usage count / popularity)")
-	manageFlag := flag.String("manage", "", "Manage tools in database: 'list', 'view', 'delete', 'create'")
-	toolIDFlag := flag.String("tool-id", "", "The target tool ID for management actions")
-	toolDefFlag := flag.String("tool-def", "", "JSON file containing a single tool schema to create/register")
-	dbFlag := flag.String("db", "", "Manage database daemon: 'start', 'stop', 'status', 'logs'")
-	dbLogsFlag := flag.Int("db-logs-count", 15, "Number of database log lines to print")
-	interactiveFlag := flag.Bool("interactive", false, "Run in interactive CLI mode")
-	debugFlag := flag.Bool("debug", false, "Enable verbose scoring and evaluation logs")
-
-	// Memory-specific flags
-	memAddFlag := flag.String("memory-add", "", "Save a text fact/context in the agent memory database")
-	memQueryFlag := flag.String("memory-query", "", "Perform semantic vector recall search across memory entries")
-	memListFlag := flag.Bool("memory-list", false, "Display chronological list of memory entries for a session")
-	memClearFlag := flag.Bool("memory-clear", false, "Purge all memory entries associated with the session (session separation)")
-	sessionIDFlag := flag.String("session", "default", "The session ID/context namespace (defaults to 'default')")
-	categoryFlag := flag.String("category", "episodic", "Category of the memory (e.g. preference, episodic, task_log)")
-	taskIDFlag := flag.String("task-id", "", "The specific background task ID to link with a task_log entry")
-
-	flag.Parse()
-
 	ctx := context.Background()
 
-	if *initFlag {
-		initializeAgentRules(ctx, *initGlobalFlag, *initNameFlag)
+	if len(os.Args) < 2 {
+		runInteractive(ctx, cfg)
 		return
 	}
 
-	if *dbFlag != "" {
-		handleDatabaseDaemon(ctx, *dbFlag, *dbLogsFlag)
-		return
-	}
+	subcommand := os.Args[1]
+	switch subcommand {
+	case "seed":
+		seedCmd := flag.NewFlagSet("seed", flag.ExitOnError)
+		fileFlag := seedCmd.String("file", "tools.json", "JSON file containing tools to seed (falls back to built-in registry if file not found)")
+		seedCmd.Parse(os.Args[2:])
 
-	// If no flags are provided, default to interactive mode
-	if !*seedFlag && *queryFlag == "" && *execFlag == "" && *manageFlag == "" &&
-		*memAddFlag == "" && *memQueryFlag == "" && !*memListFlag && !*memClearFlag &&
-		*optimizeTextFlag == "" && !*interactiveFlag {
-		*interactiveFlag = true
-	}
-	// 2. Initialize Embedder
-	embedder := setupEmbedder(ctx, cfg)
-	defer embedder.Close()
+		embedder := setupEmbedder(ctx, cfg)
+		defer embedder.Close()
+		client := connectDB(ctx, cfg)
+		defer client.Close(ctx)
 
-	// 3. Connect to SurrealDB
-	fmt.Printf("🔌 Connecting to SurrealDB at %s...\n", cfg.SurrealURL)
-	client, err := db.Connect(ctx, cfg.SurrealURL, cfg.SurrealUser, cfg.SurrealPass, cfg.SurrealNS, cfg.SurrealDB)
-	if err != nil {
-		log.Fatalf("❌ Failed to connect to SurrealDB: %v", err)
-	}
-	defer client.Close(ctx)
-	fmt.Println("✅ Connected successfully!")
+		seedDatabase(ctx, client, embedder, *fileFlag)
 
-	// 4. Handle commands
-	if *seedFlag {
-		seedDatabase(ctx, client, embedder, *seedFileFlag)
-		return
-	}
+	case "query":
+		queryCmd := flag.NewFlagSet("query", flag.ExitOnError)
+		optimizeFlag := queryCmd.Bool("optimize", false, "Optimize and compress wordy prompts before tool selection")
+		sessionFlag := queryCmd.String("session", "default", "The session ID/context namespace (defaults to 'default')")
+		debugFlag := queryCmd.Bool("debug", false, "Enable verbose scoring and evaluation logs")
+		queryCmd.Parse(os.Args[2:])
 
-	if *memAddFlag != "" {
-		handleMemoryAdd(ctx, client, embedder, *memAddFlag, *sessionIDFlag, *categoryFlag, *taskIDFlag)
-		return
-	}
+		queryText := strings.Join(queryCmd.Args(), " ")
+		if queryText == "" {
+			fmt.Println("❌ Error: a query string is required. Usage: aether query [options] <query>")
+			os.Exit(1)
+		}
 
-	if *memQueryFlag != "" {
-		handleMemoryQuery(ctx, client, embedder, *memQueryFlag, *sessionIDFlag)
-		return
-	}
+		embedder := setupEmbedder(ctx, cfg)
+		defer embedder.Close()
+		client := connectDB(ctx, cfg)
+		defer client.Close(ctx)
 
-	if *memListFlag {
-		handleMemoryList(ctx, client, *sessionIDFlag, *categoryFlag)
-		return
-	}
+		engine := search.NewSearchEngine(client, embedder, cfg.MinConfidence, cfg.MaxResults)
+		engine.Debug = *debugFlag
 
-	if *memClearFlag {
-		handleMemoryClear(ctx, client, *sessionIDFlag)
-		return
-	}
+		runQuerySearch(ctx, client, engine, embedder, queryText, *sessionFlag, *optimizeFlag)
 
-	if *optimizeTextFlag != "" {
+	case "interactive":
+		runInteractive(ctx, cfg)
+
+	case "execute":
+		execCmd := flag.NewFlagSet("execute", flag.ExitOnError)
+		execCmd.Parse(os.Args[2:])
+		toolID := execCmd.Arg(0)
+		if toolID == "" {
+			fmt.Println("❌ Error: tool ID is required. Usage: aether execute <tool_id>")
+			os.Exit(1)
+		}
+
+		client := connectDB(ctx, cfg)
+		defer client.Close(ctx)
+		executeTool(ctx, client, toolID)
+
+	case "manage":
+		if len(os.Args) < 3 {
+			fmt.Println("❌ Error: management action is required. Usage: aether manage <action> [options] (list, view, delete, create)")
+			os.Exit(1)
+		}
+		action := os.Args[2]
+
+		manageCmd := flag.NewFlagSet("manage", flag.ExitOnError)
+		toolIDFlag := manageCmd.String("tool-id", "", "The target tool ID for management actions")
+		toolDefFlag := manageCmd.String("tool-def", "", "JSON file containing a single tool schema to create/register")
+		manageCmd.Parse(os.Args[3:])
+
+		embedder := setupEmbedder(ctx, cfg)
+		defer embedder.Close()
+		client := connectDB(ctx, cfg)
+		defer client.Close(ctx)
+
+		handleToolManagement(ctx, client, embedder, action, *toolIDFlag, *toolDefFlag)
+
+	case "db":
+		if len(os.Args) < 3 {
+			fmt.Println("❌ Error: database daemon action is required. Usage: aether db <action> [options] (start, stop, status, logs, install)")
+			os.Exit(1)
+		}
+		action := os.Args[2]
+
+		dbCmd := flag.NewFlagSet("db", flag.ExitOnError)
+		logsCountFlag := dbCmd.Int("logs-count", 15, "Number of database log lines to print")
+		dbCmd.Parse(os.Args[3:])
+
+		handleDatabaseDaemon(ctx, action, *logsCountFlag)
+
+	case "init":
+		initCmd := flag.NewFlagSet("init", flag.ExitOnError)
+		globalFlag := initCmd.Bool("global", false, "Initialize rule configuration globally (affects all workspaces)")
+		nameFlag := initCmd.String("name", "", "The executable name or command path to run in the rule (defaults to absolute path of this binary)")
+		initCmd.Parse(os.Args[2:])
+
+		initializeAgentRules(ctx, *globalFlag, *nameFlag)
+
+	case "memory":
+		if len(os.Args) < 3 {
+			fmt.Println("❌ Error: memory action is required. Usage: aether memory <action> [options] (add, query, list, clear)")
+			os.Exit(1)
+		}
+		action := os.Args[2]
+
+		memoryCmd := flag.NewFlagSet("memory", flag.ExitOnError)
+		sessionFlag := memoryCmd.String("session", "default", "The session ID/context namespace (defaults to 'default')")
+		categoryFlag := memoryCmd.String("category", "episodic", "Category of the memory (e.g. preference, episodic, task_log)")
+		taskIDFlag := memoryCmd.String("task-id", "", "The specific background task ID to link with a task_log entry")
+		memoryCmd.Parse(os.Args[3:])
+
+		embedder := setupEmbedder(ctx, cfg)
+		defer embedder.Close()
+		client := connectDB(ctx, cfg)
+		defer client.Close(ctx)
+
+		switch action {
+		case "add":
+			content := strings.Join(memoryCmd.Args(), " ")
+			if content == "" {
+				fmt.Println("❌ Error: memory content is required. Usage: aether memory add [options] <content>")
+				os.Exit(1)
+			}
+			handleMemoryAdd(ctx, client, embedder, content, *sessionFlag, *categoryFlag, *taskIDFlag)
+		case "query":
+			queryText := strings.Join(memoryCmd.Args(), " ")
+			if queryText == "" {
+				fmt.Println("❌ Error: memory query text is required. Usage: aether memory query [options] <query>")
+				os.Exit(1)
+			}
+			handleMemoryQuery(ctx, client, embedder, queryText, *sessionFlag)
+		case "list":
+			handleMemoryList(ctx, client, *sessionFlag, *categoryFlag)
+		case "clear":
+			handleMemoryClear(ctx, client, *sessionFlag)
+		default:
+			fmt.Printf("❌ Error: unknown memory action '%s'. Supported: add, query, list, clear\n", action)
+			os.Exit(1)
+		}
+
+	case "optimize":
+		optimizeCmd := flag.NewFlagSet("optimize", flag.ExitOnError)
+		optimizeCmd.Parse(os.Args[2:])
+
+		textToOptimize := strings.Join(optimizeCmd.Args(), " ")
+		if textToOptimize == "" {
+			fmt.Println("❌ Error: text to optimize is required. Usage: aether optimize <text>")
+			os.Exit(1)
+		}
+
+		embedder := setupEmbedder(ctx, cfg)
+		defer embedder.Close()
+
 		optimizer := search.NewPromptOptimizer(embedder)
 		fmt.Println("⚡ Running prompt optimization pipeline...")
-		optPrompt, intent, origWords, optWords, err := optimizer.Optimize(ctx, *optimizeTextFlag)
+		optPrompt, intent, origWords, optWords, err := optimizer.Optimize(ctx, textToOptimize)
 		if err != nil {
 			log.Fatalf("❌ Prompt optimization failed: %v", err)
 		}
@@ -126,31 +194,55 @@ func main() {
 		fmt.Printf("  Extracted Intent:     \"%s\"\n", intent)
 		fmt.Println("=====================================================================")
 		fmt.Printf("\n📝 OPTIMIZED CONTEXT:\n%s\n", optPrompt)
-		return
-	}
 
-	if *manageFlag != "" {
-		handleToolManagement(ctx, client, embedder, *manageFlag, *toolIDFlag, *toolDefFlag)
-		return
-	}
+	case "help", "-help", "--help", "-h":
+		printUsage()
 
-	if *execFlag != "" {
-		executeTool(ctx, client, *execFlag)
-		return
+	default:
+		fmt.Printf("❌ Unknown subcommand '%s'\n\n", subcommand)
+		printUsage()
 	}
+}
 
-	// Initialize Search Engine
+func connectDB(ctx context.Context, cfg *config.Config) *db.SurrealClient {
+	fmt.Printf("🔌 Connecting to SurrealDB at %s...\n", cfg.SurrealURL)
+	client, err := db.Connect(ctx, cfg.SurrealURL, cfg.SurrealUser, cfg.SurrealPass, cfg.SurrealNS, cfg.SurrealDB)
+	if err != nil {
+		log.Fatalf("❌ Failed to connect to SurrealDB: %v", err)
+	}
+	fmt.Println("✅ Connected successfully!")
+	return client
+}
+
+func runInteractive(ctx context.Context, cfg *config.Config) {
+	embedder := setupEmbedder(ctx, cfg)
+	defer embedder.Close()
+	client := connectDB(ctx, cfg)
+	defer client.Close(ctx)
+
 	engine := search.NewSearchEngine(client, embedder, cfg.MinConfidence, cfg.MaxResults)
-	engine.Debug = *debugFlag
+	runInteractiveLoop(ctx, client, engine)
+}
 
-	if *queryFlag != "" {
-		runQuerySearch(ctx, client, engine, embedder, *queryFlag, *sessionIDFlag, *optimizeFlag)
-		return
-	}
-
-	if *interactiveFlag {
-		runInteractiveLoop(ctx, client, engine)
-	}
+func printUsage() {
+	fmt.Println("Usage: aether <subcommand> [options]")
+	fmt.Println("\nSubcommands:")
+	fmt.Println("  seed          Seed the SurrealDB database with tools and generate embeddings")
+	fmt.Println("                Options: -file <path>")
+	fmt.Println("  query         Run semantic tool selection for a natural language query")
+	fmt.Println("                Options: -session <id> -optimize -debug")
+	fmt.Println("  interactive   Run in interactive CLI mode (default if no subcommand provided)")
+	fmt.Println("  execute       Simulate execution of a tool by ID")
+	fmt.Println("  manage        Manage tools in database: list, view, delete, create")
+	fmt.Println("                Options: -tool-id <id> -tool-def <path>")
+	fmt.Println("  db            Manage database daemon: start, stop, status, logs, install")
+	fmt.Println("                Options: -logs-count <num>")
+	fmt.Println("  init          Initialize agent rule configuration file (AGENTS.md)")
+	fmt.Println("                Options: -global -name <cli-name>")
+	fmt.Println("  memory        Manage agent memory: add, query, list, clear")
+	fmt.Println("                Options: -session <id> -category <cat> -task-id <id>")
+	fmt.Println("  optimize      Compress and optimize a large text prompt/log directly")
+	os.Exit(0)
 }
 
 // seedDatabase wipes the schema, creates indices, and indexes the tool library.
@@ -302,7 +394,7 @@ func runQuerySearch(ctx context.Context, client *db.SurrealClient, engine *searc
 		log.Fatalf("❌ Failed to fetch tools for metrics: %v", err)
 	}
 	if len(allTools) == 0 {
-		fmt.Println("⚠️  Database is empty. Please seed the database first using -seed flag.")
+		fmt.Println("⚠️  Database is empty. Please seed the database first using 'seed' subcommand.")
 		return
 	}
 
@@ -1027,37 +1119,44 @@ func initializeAgentRules(ctx context.Context, global bool, cliName string) {
 
 %s
 
-This project implements a semantic tool selection filter and associative agent memory database to optimize context size. All agent sessions must adhere to the following rules to maximize token savings.
+This project implements **Aether**, an advanced agentic context routing and persistent memory engine. To optimize your context size (saving 75-90%% of tokens), enforce architectural standards, and maintain project-wide coherence, you **MUST STRICTLY** adhere to this pipeline. **DO NOT SKIP OR BYPASS THESE RULES.**
 
-## 🛠️ Semantic Tool Filtering & Memory Recall Constraint (Unified Context Pipeline)
+## 🚨 MANDATORY PIPELINE (Execute on Turn 1)
 
-Before proposing or executing any complex task requiring multiple tool calls or design considerations, you **MUST** run the user prompt through the semantic selector under your active session to identify both matching tools and recalled memory preferences in a single step:
+Before you select any tools, call files, or propose any implementation plans, you **MUST** run the semantic context query to retrieve active tools and persistent memories:
 
 ` + "```" + `bash
-rtk %s -query "<brief description of the user request>" -session "<session_id>"
+%s query -session "<session_id>" "<brief description of the user request>"
+` + "```" + `
+*(Note: Do not wander to other folders/projects looking for aether tool source. Use the exact binary path provided above. If it is not found, use '/root/.local/bin/aether' or the PATH command 'aether'.)*
+
+### ⚠️ Self-Healing / Offline Database Startup
+If the query command fails with a connection error or indicates SurrealDB is offline, you **MUST** start the database background daemon first and then retry the query:
+` + "```" + `bash
+%s db start
+# Wait 1 second for the daemon to initialize, then run:
+%s query -session "<session_id>" "<brief description of the user request>"
 ` + "```" + `
 
-- Running this command automatically exports the complete JSON schema definitions of the matched tools to the workspace file ` + "`.agents/recommended_tools.json`" + `.
-- It also performs semantic memory retrieval across the database, returning relevant workspace guidelines and global preferences in standard output.
-- **You MUST immediately read ` + "`.agents/recommended_tools.json`" + `** to obtain the precise parameter and usage schemas of the recommended tools.
-- Do not inject all default tool schemas into your thinking or output context. For the duration of the current task, only refer to or use the schemas of the filtered tools found in ` + "`.agents/recommended_tools.json`" + `.
-- Adopt the retrieved memory constraints, preferences, or past design decisions returned in stdout.
+### 📋 Post-Query Actions (Mandatory)
+1. **Immediately Read Recommended Tools**: You **MUST** read the file ` + "`.agents/recommended_tools.json`" + ` using your file viewing tool. This contains the exact schemas, parameters, and descriptions of the tools selected for this task.
+2. **Restrict Your Tool Usage**: For the duration of this task, you are **ONLY** permitted to invoke the tools explicitly listed in ` + "`.agents/recommended_tools.json`" + `. Do not use default or general system-level tools for specialized tasks unless they are recommended.
+3. **Adopt Persistent Context**: Adopt all guidelines, preferences, and architectural constraints returned in the stdout of the 'aether query' command.
 
-## 🧠 Agent Memory & Logging Operations
+## 🧠 persistence & Memory Logging (Turn N / Task Completion)
 
-To keep context windows clean and persist design decisions across turns:
-1. **Isolate Sessions**: Run all memory operations under a specific session namespace using the ` + "`-session \"<session_id>\"`" + ` flag (e.g. matching your active workspace name or active branch).
-2. **Recall Memories Independently**: If you need to search memories without selecting tools, run a semantic memory query using:
+To keep context windows clean and persist design decisions across agent turns:
+1. **Commit Architectural Choices / Feature States**: When you complete a task, resolve a bug, or make an architectural decision, save it in the persistent memory:
    ` + "```" + `bash
-   rtk %s -memory-query "<task context or question>" -session "<session_id>"
+   %s memory add -session "<session_id>" -category "preference" "Decision: <concise summary of the architectural choice or feature state>"
    ` + "```" + `
-3. **Commit New Memories**: After completing a feature, resolving a bug, or making a critical architectural decision, save it in the memory database:
+2. **Recall Memories Independently**: If you need to search project memory without performing tool selection (e.g. to answer a question or check past work), query the memory store:
    ` + "```" + `bash
-   rtk %s -memory-add "Decision: <concise summary of the architectural choice or feature state>" -session "<session_id>" -category "preference"
+   %s memory query -session "<session_id>" "<task context or question>"
    ` + "```" + `
-4. **Log Task Progress**: For background tasks, log key outputs or execution logs to the database for future lookback:
+3. **Task and Execution Logs**: For long-running or background processes, log statuses periodically:
    ` + "```" + `bash
-   rtk %s -memory-add "Log: <concise log details>" -session "<session_id>" -category "task_log" -task-id "<task_id>"
+   %s memory add -session "<session_id>" -category "task_log" -task-id "<task_id>" "Log: <concise details>"
    ` + "```" + `
 
 ## 🛠️ Custom Tool Creation & Registration
@@ -1066,15 +1165,9 @@ To extend capabilities, you can dynamically register custom tools, helper script
 1. Format your tool in JSON according to [TOOL_FORMAT.md](file:///root/STS-surreal/TOOL_FORMAT.md).
 2. Register it into the vector database using:
    ` + "```" + `bash
-   rtk %s -manage create -tool-def /path/to/new_tool.json
+   %s manage create -tool-def /path/to/new_tool.json
    ` + "```" + `
-
-## 📉 Token Optimization for Commands & Logs
-
-To keep context windows small and avoid bloating history logs:
-- **Always prefix shell commands with ` + "`rtk`" + `** (e.g., ` + "`rtk go test`" + `, ` + "`rtk docker ps`" + `, ` + "`rtk git status`" + `).
-- When reading logs or verifying files, use ` + "`rtk`" + `'s built-in log/stderr filtering capabilities to only display warnings or failures, stripping out boilerplates and successful execution logs.
-`, ruleHeader, resolvedCLI, resolvedCLI, resolvedCLI, resolvedCLI, resolvedCLI)
+`, ruleHeader, resolvedCLI, resolvedCLI, resolvedCLI, resolvedCLI, resolvedCLI, resolvedCLI, resolvedCLI)
 
 	// 4. Create or overwrite rules file
 	_ = os.MkdirAll(filepath.Dir(targetPath), 0755)
